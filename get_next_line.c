@@ -13,8 +13,7 @@
 #include "get_next_line.h"
 #include "libft/includes/libft.h"
 #include <sys/types.h>
-
-#include <stdio.h>
+#include <unistd.h>
 
 static int	ft_end_line(char *save)
 {
@@ -33,58 +32,49 @@ static int	ft_end_line(char *save)
 static char	*ft_give_clean(char *save, char **line)
 {
 	int		i;
-	char	*tmp;
 
 	i = 0;
-	tmp = save;
-	ft_putendl(" -- AVANT --");
-
-	// printf("save2: >%s<\n", tmp);
-	ft_putendl(save);
-	ft_putendl(" -- APRES --");
-
-	while (tmp[i] != '\n')
+	while (save[i] && save[i] != '\n')
 		i++;
-
-	tmp = save;
-	*line = ft_strsub(tmp, 0, i);
-
-	ft_putendl(save);
-
-
-	ft_putendl(" -- ");
-
+	*line = ft_strsub(save, 0, i);
 	save = ft_strsub(save, i + 1, ft_strlen(save) - (i - 1));
-	printf("save4: >%s<\n", save);
-	// printf("save: %s\n", save);
-	// printf("line : %s\n\n\n\n", *line);
 	return (save);
+}
+
+static int	ft_last_line(char *savebuff, char *save, char **line)
+{
+	if (savebuff)
+		*line = ft_strdup(savebuff);
+	else
+		*line = ft_strdup(save);
+	return (BUFF_SIZE);
 }
 
 int			get_next_line(int const fd, char **line)
 {
 	int			value_read;
-	static char	save[BUFF_SIZE + 1] = "";
+	static char	save[BUFF_SIZE] = "";
 	char		*savebuff;
 
-	savebuff = NULL;
-	// printf("save:%s\n", save);
-	if (*save && save && ft_strlen(save) > 0 && ft_end_line(save))
+	if (!(savebuff = NULL) && (!line || fd < 0))
+		return (-1);
+	if (*save && ft_strlen(save) > 0 && ft_end_line(save))
 	{
-		ft_give_clean(save, line);
+		ft_strncpy(save, ft_give_clean(save, line), BUFF_SIZE);
 		return (1);
 	}
-	else if (*save && save && ft_strlen(save) > 0)
+	else if (*save && ft_strlen(save) > 0)
 		savebuff = ft_strdup(save);
 	while ((value_read = read(fd, save, BUFF_SIZE)) > 0)
 	{
+		save[value_read] = '\0';
 		savebuff = ft_strjoin(savebuff, save);
-		printf("savebuff: %s\n", savebuff);
 		if (ft_end_line(savebuff))
 		{
 			ft_strncpy(save, ft_give_clean(savebuff, line), BUFF_SIZE);
 			return (1);
 		}
 	}
+	ft_bzero(save, ft_last_line(savebuff, save, line));
 	return (value_read);
 }
